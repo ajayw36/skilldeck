@@ -1,0 +1,20 @@
+{
+  "_generated": "by `skill registry` \u2014 do not edit by hand",
+  "skills": [
+    {
+      "name": "deploy-preflight",
+      "description": "Run before executing any production deploy \u2014 verifies required env vars, pending migrations, and rollback readiness before any deploy command is run.",
+      "version": "1.0.0",
+      "owner": "ajay",
+      "status": "verified",
+      "tags": [
+        "deploy",
+        "ci"
+      ],
+      "evals": {
+        "execution_cases": 3,
+        "has_triggers": true
+      }
+    }
+  ]
+}

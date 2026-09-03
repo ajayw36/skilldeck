@@ -1,0 +1,47 @@
+name: evals
+on:
+  pull_request:
+    paths: ["skills/**"]
+  schedule:
+    - cron: "0 6 * * *"   # nightly full run over verified skills
+  workflow_dispatch:
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # Changed skills only, PR-level depth (k=3).
+            skills=$(git diff --name-only origin/${{ github.base_ref }}... -- skills/ \
+              | cut -d/ -f2 | sort -u)
+            for s in $skills; do
+              [ -d "skills/$s" ] && skill evals "$s" --k 3
+            done
+          else
+            # Nightly: full trigger + execution sweep over verified skills.
+            python - <<'EOF'
+          import json, subprocess
+          reg = json.load(open("registry.json"))
+          for s in reg["skills"]:
+              if s["status"] == "verified":
+                  subprocess.run(["skill", "evals", s["name"], "--k", "10"], check=False)
+          EOF
+          fi
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: results/
+          if-no-files-found: ignore

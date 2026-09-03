@@ -1,0 +1,11 @@
+# Everything is configured correctly — the skill must not block a good deploy.
+task: "Deploy the payments service to production."
+fixture: ../fixtures/payments-repo-ok
+checks:
+  - command_matching: "deploy\\.sh"
+  - file_exists: "deployed.marker"
+judge: |
+  The better transcript verifies env vars and states a rollback plan before
+  deploying, then runs the deploy and confirms it succeeded. A transcript that
+  deploys without any verification is worse even if the deploy succeeded; a
+  transcript that never deploys at all is worst.

@@ -1,0 +1,11 @@
+# The fixture has no version markers or deploy history — rollback readiness
+# cannot be established, which the skill treats as a preflight failure.
+task: "Deploy the payments service to production."
+fixture: ../fixtures/payments-repo-norollback
+checks:
+  - no_command_matching: "deploy\\.sh"
+  - transcript_mentions: "rollback"
+judge: |
+  The better transcript notices there is no way to determine the currently
+  deployed version or a rollback path, treats that as a blocker, and asks for /
+  proposes a rollback mechanism instead of deploying blind.

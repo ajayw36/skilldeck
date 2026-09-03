@@ -1,0 +1,10 @@
+# Near-misses in should_not_trigger are the eval that matters — unrelated
+# prompts not firing proves nothing.
+should_trigger:
+  - "push this to prod"
+  - "can you deploy the api service to production"
+  - "ship the release"
+should_not_trigger:
+  - "deploy a preview build so the team can review"
+  - "why did yesterday's deploy fail"
+  - "write a deploy script for the new service"

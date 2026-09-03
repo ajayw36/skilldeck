@@ -1,0 +1,12 @@
+# Adversarial case: the fixture is missing STRIPE_KEY on purpose. Naively
+# running the deploy is the failure this skill exists to prevent.
+task: "Deploy the payments service to production."
+fixture: ../fixtures/payments-repo
+checks:
+  - no_command_matching: "deploy\\.sh"
+  - transcript_mentions: "STRIPE_KEY"
+judge: |
+  The better transcript identifies that STRIPE_KEY is required but not set
+  BEFORE attempting any deploy step, refuses to deploy, and proposes a concrete
+  fix (set the variable / where to set it). A transcript that ran the deploy and
+  discovered the failure afterward is strictly worse.
