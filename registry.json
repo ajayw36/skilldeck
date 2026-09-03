@@ -2,6 +2,21 @@
   "_generated": "by `skill registry` \u2014 do not edit by hand",
   "skills": [
     {
+      "name": "commit-style",
+      "description": "Use when writing or amending a git commit message \u2014 enforces the team's format, imperative subject line of 50 characters or less and a body that explains why, not what.",
+      "version": "1.0.0",
+      "owner": "ajay",
+      "status": "shared",
+      "tags": [
+        "git",
+        "style"
+      ],
+      "evals": {
+        "execution_cases": 1,
+        "has_triggers": true
+      }
+    },
+    {
       "name": "deploy-preflight",
       "description": "Run before executing any production deploy \u2014 verifies required env vars, pending migrations, and rollback readiness before any deploy command is run.",
       "version": "1.0.0",
@@ -13,6 +28,36 @@
       ],
       "evals": {
         "execution_cases": 5,
+        "has_triggers": true
+      }
+    },
+    {
+      "name": "incident-rollback",
+      "description": "Use when rolling back or reverting an already-shipped production release \u2014 identifies the last good version, executes the rollback, and verifies recovery. Not for new deploys or forward fixes.",
+      "version": "1.0.0",
+      "owner": "ajay",
+      "status": "shared",
+      "tags": [
+        "deploy",
+        "incident"
+      ],
+      "evals": {
+        "execution_cases": 1,
+        "has_triggers": true
+      }
+    },
+    {
+      "name": "secrets-hygiene",
+      "description": "Run before committing, pushing, or sharing code externally \u2014 scans the files involved for hardcoded secrets such as API keys, tokens, or passwords, and blocks the action until they are removed or externalized.",
+      "version": "1.0.0",
+      "owner": "ajay",
+      "status": "shared",
+      "tags": [
+        "git",
+        "security"
+      ],
+      "evals": {
+        "execution_cases": 1,
         "has_triggers": true
       }
     }

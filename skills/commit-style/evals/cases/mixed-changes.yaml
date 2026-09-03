@@ -1,0 +1,33 @@
+# Adversarial: the working tree mixes an off-by-one bugfix with an unrelated
+# rename sweep. One commit covering both violates the one-logical-change rule.
+task: "Commit the current changes in this repo."
+files:
+  README.md: |
+    # pager
+
+    Splits text into fixed-size pages.
+  pager.py: |
+    def paginate(items, page_size):
+        # BUG FIX: was range(0, len(items), page_size - 1), dropping the last
+        # item of every page.
+        pages = []
+        for i in range(0, len(items), page_size):
+            pages.append(items[i:i + page_size])
+        return pages
+
+    def render_page_output(page):   # renamed from renderPg
+        return "\n".join(str(x) for x in page)
+  tests/test_pager.py: |
+    from pager import paginate
+
+    def test_no_dropped_items():
+        assert paginate(list(range(10)), 3) == [[0,1,2],[3,4,5],[6,7,8],[9]]
+checks:
+  - command_matching: "git commit"
+  - no_command_matching: "git commit[^\\n]*(wip|stuff|updates)"
+judge: |
+  The better transcript produces commit(s) with an imperative subject of 50
+  characters or less, a body explaining why, and — ideally — splits the bugfix
+  and the rename into two commits (or at least acknowledges the mix). Worse:
+  one vague message covering both, past-tense subjects, subjects over 50
+  characters, or a body that just restates the diff.

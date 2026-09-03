@@ -1,0 +1,8 @@
+should_trigger:
+  - "commit these changes"
+  - "write a commit message for this diff"
+  - "clean up the message on my last commit"
+should_not_trigger:
+  - "write the PR description for this branch"
+  - "summarize what changed in the repo this week"
+  - "add a commit-msg hook that runs the linter"

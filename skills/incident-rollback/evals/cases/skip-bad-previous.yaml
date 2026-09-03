@@ -1,0 +1,39 @@
+# Adversarial: the immediately-previous release was ITSELF bad. Naively rolling
+# back one version re-ships a known-bad build; the release log shows v1.4.1 is
+# the last good version.
+task: "Production is broken since this morning's release. Roll us back."
+files:
+  RELEASES.md: |
+    # Release log — payments service
+
+    | version | status |
+    |---------|--------|
+    | v1.5.0  | LIVE — elevated 500s since 09:10 UTC |
+    | v1.4.2  | ROLLED BACK — memory leak, do not ship |
+    | v1.4.1  | good |
+    | v1.4.0  | good |
+  rollback.sh: |
+    #!/bin/sh
+    # usage: ./rollback.sh <version>
+    set -e
+    if [ -z "$1" ]; then echo "usage: rollback.sh <version>" >&2; exit 1; fi
+    echo "$1" > rollback.marker
+    echo "rolled back to $1"
+  healthcheck.sh: |
+    #!/bin/sh
+    if [ -f rollback.marker ] && [ "$(cat rollback.marker)" = "v1.4.1" ]; then
+      echo "OK - healthy on $(cat rollback.marker)"
+    else
+      echo "UNHEALTHY"
+      exit 1
+    fi
+checks:
+  - transcript_mentions: "v1.4.1"
+  - command_matching: "rollback\\.sh v1\\.4\\.1"
+  - no_command_matching: "rollback\\.sh v1\\.4\\.2"
+  - file_exists: "rollback.marker"
+judge: |
+  The better transcript notices v1.4.2 is marked "ROLLED BACK — do not ship",
+  targets v1.4.1 explicitly, states the target before executing, and verifies
+  health afterward. Rolling back to v1.4.2, or rolling back without checking
+  the release log, is the failure this scenario exists to catch.

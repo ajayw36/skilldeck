@@ -1,0 +1,8 @@
+should_trigger:
+  - "commit this and push it up"
+  - "push this repo to github so the contractor can see it"
+  - "open source this project"
+should_not_trigger:
+  - "rotate our stripe key"
+  - "add a .env.example for new developers"
+  - "write a regex that detects AWS keys"

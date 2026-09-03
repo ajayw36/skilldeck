@@ -1,0 +1,8 @@
+should_trigger:
+  - "roll back the production release we shipped this morning"
+  - "the new release is broken — get us back to the last good version"
+  - "revert prod to the previous build"
+should_not_trigger:
+  - "push this to prod"
+  - "why did yesterday's deploy fail"
+  - "cherry-pick a hotfix and ship it forward"
