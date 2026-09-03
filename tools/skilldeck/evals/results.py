@@ -83,7 +83,8 @@ def all_runs(repo_root: pathlib.Path, skill_name: str) -> list[pathlib.Path]:
     """Merged history: local results/ plus committed evidence/ (which includes
     teammates' clean-tree runs), deduped by run filename."""
     seen: dict[str, pathlib.Path] = {}
-    for base in ("results", "evidence"):
+    for base in ("evidence", "results"):  # evidence wins the dedupe: same
+        # content, but its path marks the run as shared
         d = repo_root / base / skill_name
         if d.is_dir():
             for p in d.glob("*.jsonl"):
