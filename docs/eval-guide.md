@@ -70,7 +70,20 @@ skill evals my-skill --k 10            # promotion-level
 skill evals-report my-skill            # latest run summary
 ```
 
-Results are JSONL under `results/` (gitignored). Cost note: execution evals are
+Results are JSONL under `results/` (gitignored).
+
+## Model routing
+
+All harness calls — eval-arm agents, trigger selection, the judge, and
+generation — run on **haiku** by default (override per run with `--model`, or
+globally with `SKILLDECK_MODEL`). The model is recorded in each run's meta
+line; only compare W/L/T numbers across runs on the same model. Two caveats:
+before promoting a skill, evaluate it on the model your team actually uses it
+with — lifts are model-relative (a skill can help haiku yet be redundant for a
+stronger model) — and if judge verdicts on subtle rubrics look unstable, rerun
+with `--model` set to a stronger model.
+
+Cost note: execution evals are
 the expensive part (arms × k × agent runs). If you must cut, cut PR-time
 execution evals before trigger evals — a skill that fires wrongly is worse than
 one that fires with mediocre advice.

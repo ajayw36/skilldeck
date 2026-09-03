@@ -133,8 +133,11 @@ def cmd_evals(args) -> int:
     skill = parse_skill_md(skill_md)
 
     from .evals import results as results_mod
+    from .evals.runner import current_model, set_model
+    set_model(getattr(args, "model", None))
     rows: list[dict] = []
-    meta = {"skill": skill.name, "version": skill.version, "k": args.k}
+    meta = {"skill": skill.name, "version": skill.version, "k": args.k,
+            "model": current_model()}
 
     if not args.execution_only:
         from .evals.triggers import run_trigger_evals
@@ -171,6 +174,8 @@ def cmd_gen_evals(args) -> int:
         sys.exit(f"error: no such skill: {args.name}")
     skill = parse_skill_md(skill_md)
     from .evals.generate import generate
+    from .evals.runner import set_model
+    set_model(getattr(args, "model", None))
     print(f"generating {args.cases} case(s) and {args.triggers}+{args.triggers} trigger "
           f"prompts for {skill.name} (one model call, may take a minute)...")
     summary = generate(root, skill, n_cases=args.cases, n_triggers=args.triggers)
@@ -230,12 +235,14 @@ def main(argv=None) -> int:
     sp.add_argument("--triggers-only", action="store_true")
     sp.add_argument("--execution-only", action="store_true")
     sp.add_argument("--case", help="run only this execution case (by filename stem)")
+    sp.add_argument("--model", help="model for all harness calls (default: haiku)")
     sp.set_defaults(fn=cmd_evals)
 
     sp = sub.add_parser("gen-evals", help="generate trigger prompts and execution cases with the model")
     sp.add_argument("name")
     sp.add_argument("--cases", type=int, default=3, help="execution cases to generate (default 3)")
     sp.add_argument("--triggers", type=int, default=4, help="prompts per trigger list (default 4)")
+    sp.add_argument("--model", help="model for generation (default: haiku)")
     sp.set_defaults(fn=cmd_gen_evals)
 
     sp = sub.add_parser("evals-report", help="summarize the latest eval run for a skill")

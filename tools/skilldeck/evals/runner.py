@@ -12,6 +12,21 @@ import subprocess
 AGENT_CMD = os.environ.get("SKILLDECK_AGENT_CMD", "claude")
 DEFAULT_TIMEOUT = 600
 
+# All harness calls (eval arms, trigger selection, judge) use one pinned model,
+# recorded in every run's meta. Default is haiku for cost; override with
+# --model or SKILLDECK_MODEL.
+DEFAULT_MODEL = os.environ.get("SKILLDECK_MODEL", "haiku")
+_model = DEFAULT_MODEL
+
+
+def set_model(model: str | None) -> None:
+    global _model
+    _model = model or DEFAULT_MODEL
+
+
+def current_model() -> str:
+    return _model
+
 
 class AgentRunError(RuntimeError):
     pass
@@ -78,6 +93,7 @@ def run_agent(prompt: str, cwd: pathlib.Path, transcript_path: pathlib.Path | No
         # hooks, MCP servers) — evals must be reproducible across machines.
         "--setting-sources", "project",
         "--strict-mcp-config",
+        "--model", _model,
     ]
     proc = subprocess.run(
         cmd, cwd=str(cwd), capture_output=True, text=True, timeout=timeout,
@@ -97,7 +113,8 @@ def ask_json(prompt: str, timeout: int = 120) -> dict:
     """
     cmd = [AGENT_CMD, "-p", prompt, "--output-format", "json",
            "--max-turns", "1", "--disallowedTools", "*",
-           "--setting-sources", "project", "--strict-mcp-config"]
+           "--setting-sources", "project", "--strict-mcp-config",
+           "--model", _model]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         raise AgentRunError(f"model call failed (rc={proc.returncode}): {proc.stderr[-2000:]}")
