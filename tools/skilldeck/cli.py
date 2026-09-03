@@ -200,6 +200,13 @@ def cmd_evals_report(args) -> int:
     return 0
 
 
+def cmd_web(args) -> int:
+    root = find_repo_root()
+    from .web import serve
+    serve(root, port=args.port, open_browser=not args.no_open)
+    return 0
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="skill", description="git-native agent skill management")
     sub = p.add_subparsers(dest="command", required=True)
@@ -248,6 +255,11 @@ def main(argv=None) -> int:
     sp = sub.add_parser("evals-report", help="summarize the latest eval run for a skill")
     sp.add_argument("name")
     sp.set_defaults(fn=cmd_evals_report)
+
+    sp = sub.add_parser("web", help="serve the local read-only dashboard")
+    sp.add_argument("--port", type=int, default=7787)
+    sp.add_argument("--no-open", action="store_true", help="don't open the browser")
+    sp.set_defaults(fn=cmd_web)
 
     args = p.parse_args(argv)
     return args.fn(args)

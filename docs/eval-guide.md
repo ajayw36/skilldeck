@@ -21,7 +21,16 @@ tag-neighbors on PRs, and the full catalog nightly.
 ## Execution evals (`evals/cases/*.yaml`) — given that it fired, did it help?
 
 Each case: a `task`, an optional `fixture` directory copied into a fresh
-sandbox, programmatic `checks`, and a pairwise `judge` rubric. The harness runs
+sandbox, optional inline `files` (path → content map), an optional `setup`
+shell script run in the sandbox before the agent starts (for state files can't
+express — `git init`, permissions, a local bare repo as a push remote),
+programmatic `checks`, and a pairwise `judge` rubric.
+
+Fixture rule learned the hard way: the task must be fully executable without
+asking the user anything — a headless agent that asks a clarifying question
+dies silently, and the eval measures the stall, not the skill. If the task
+says "commit and push", the sandbox needs a real repo and a real (local)
+remote. The harness runs
 up to three arms, k reps each, with the real agent (`claude -p`):
 
 - **baseline** — no skill. Comparison answers: does the skill help at all?

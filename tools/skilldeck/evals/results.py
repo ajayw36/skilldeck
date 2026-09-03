@@ -36,6 +36,46 @@ def latest_run(repo_root: pathlib.Path, skill_name: str) -> pathlib.Path | None:
     return runs[-1] if runs else None
 
 
+def load_run(path: pathlib.Path) -> tuple[dict, list[dict]]:
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+    meta = rows[0].get("_meta", {}) if rows and "_meta" in rows[0] else {}
+    return meta, [r for r in rows if "_meta" not in r]
+
+
+def all_runs(repo_root: pathlib.Path, skill_name: str) -> list[pathlib.Path]:
+    d = repo_root / "results" / skill_name
+    return sorted(d.glob("*.jsonl")) if d.is_dir() else []
+
+
+def run_summary(path: pathlib.Path) -> dict:
+    """Structured summary of one run (the web UI's data shape)."""
+    from .stats import net_lift, sign_test
+    meta, rows = load_run(path)
+    out = {"file": path.name, "meta": meta, "triggers": None, "comparisons": {}, "cases": []}
+    for t in (r for r in rows if r.get("kind") == "triggers"):
+        out["triggers"] = {
+            "recall": t["recall"], "precision": t["precision"],
+            "tp": t["tp"], "fn": t["fn"], "fp": t["fp"], "tn": t["tn"],
+            "failures": [
+                {"prompt": x["prompt"], "kind": "MISS" if x["expected"] else "FALSE-FIRE"}
+                for x in t["rows"] if not x["correct"]
+            ],
+        }
+    execs = [r for r in rows if r.get("kind") == "execution"]
+    by_cmp: dict[str, collections.Counter] = {}
+    for r in execs:
+        by_cmp.setdefault(r["comparison"], collections.Counter())[r["outcome"]] += 1
+        out["cases"].append({k: r.get(k) for k in
+                             ("case", "rep", "comparison", "outcome", "decided_by", "reason")})
+    for cmp_name, c in by_cmp.items():
+        out["comparisons"][cmp_name] = {
+            "win": c["win"], "loss": c["loss"], "tie": c["tie"],
+            "net_lift": net_lift(c["win"], c["loss"], c["tie"]),
+            "p": sign_test(c["win"], c["loss"]),
+        }
+    return out
+
+
 def report(path: pathlib.Path) -> str:
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
     meta = rows[0].get("_meta", {}) if rows and "_meta" in rows[0] else {}

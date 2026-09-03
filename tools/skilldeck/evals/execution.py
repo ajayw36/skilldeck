@@ -68,6 +68,13 @@ def _seed_sandbox(case: dict, skill_dir_src: pathlib.Path | None,
         p.write_text(str(content), encoding="utf-8")
         if rel.endswith(".sh"):
             p.chmod(0o755)
+    setup = case.get("setup")
+    if setup:
+        proc = subprocess.run(["/bin/sh", "-ce", str(setup)], cwd=sandbox,
+                              capture_output=True, text=True, timeout=60)
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"{case['_path']}: setup failed (rc={proc.returncode}): {proc.stderr[-500:]}")
     if skill_dir_src is not None or skill_md_override is not None:
         dst = sandbox / ".claude" / "skills" / skill_name
         if skill_dir_src is not None:
