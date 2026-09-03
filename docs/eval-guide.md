@@ -79,7 +79,24 @@ skill evals my-skill --k 10            # promotion-level
 skill evals-report my-skill            # latest run summary
 ```
 
-Results are JSONL under `results/` (gitignored).
+## History & team evidence
+
+Every run's meta records full provenance: skill version, a content hash of
+SKILL.md, the git commit and whether the skill's tree was dirty, the exact
+cases (name + content hash) and trigger file that ran, the model, and k.
+`skill history <name>` shows the full timeline.
+
+Runs split by reproducibility, automatically:
+
+- **Clean tree** (skill matches a commit) → also written to `evidence/<name>/`,
+  which is committed — `git add evidence && git commit` shares it, and
+  teammates' evidence merges in via `git pull`. These are the runs that back a
+  skill's status: promotion runs, regression baselines.
+- **Dirty tree** → stays in gitignored `results/` only. It measured a skill
+  version nobody else has; sharing it would pollute the team signal.
+
+`skill history` and the web dashboard show the merged view (`*` marks shared
+evidence). Local results are JSONL under `results/` (gitignored).
 
 ## Model routing
 

@@ -5,10 +5,39 @@ from __future__ import annotations
 
 import collections
 import datetime
+import hashlib
 import json
 import pathlib
+import shutil
+import subprocess
 
 from .stats import summarize
+
+
+def _sha(path: pathlib.Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:10]
+
+
+def provenance(repo_root: pathlib.Path, skill) -> dict:
+    """Exactly what this run measured: the skill's content identity, the git
+    state, and the identity of every test that ran."""
+    prov: dict = {
+        "skill_sha": _sha(skill.path),
+        "cases": {p.stem: _sha(p) for p in skill.execution_cases()},
+    }
+    tf = skill.triggers_file()
+    prov["triggers_sha"] = _sha(tf) if tf else None
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True).stdout.strip()
+        dirty = bool(subprocess.run(
+            ["git", "-C", str(repo_root), "status", "--porcelain", "--", f"skills/{skill.name}"],
+            capture_output=True, text=True, check=True).stdout.strip())
+        prov["commit"], prov["dirty"] = head[:12], dirty
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        prov["commit"], prov["dirty"] = None, True
+    return prov
 
 
 def results_dir(repo_root: pathlib.Path, skill_name: str) -> pathlib.Path:
@@ -25,6 +54,14 @@ def write_run(repo_root: pathlib.Path, skill_name: str, rows: list[dict],
         f.write(json.dumps({"_meta": meta}) + "\n")
         for row in rows:
             f.write(json.dumps(row) + "\n")
+    # Clean-tree runs are reproducible team evidence: mirror them into the
+    # committed evidence/ dir. Dirty-tree runs stay local — they measured a
+    # skill version nobody else has.
+    prov = meta.get("provenance") or {}
+    if prov.get("commit") and not prov.get("dirty"):
+        ev = repo_root / "evidence" / skill_name
+        ev.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, ev / path.name)
     return path
 
 
@@ -43,8 +80,15 @@ def load_run(path: pathlib.Path) -> tuple[dict, list[dict]]:
 
 
 def all_runs(repo_root: pathlib.Path, skill_name: str) -> list[pathlib.Path]:
-    d = repo_root / "results" / skill_name
-    return sorted(d.glob("*.jsonl")) if d.is_dir() else []
+    """Merged history: local results/ plus committed evidence/ (which includes
+    teammates' clean-tree runs), deduped by run filename."""
+    seen: dict[str, pathlib.Path] = {}
+    for base in ("results", "evidence"):
+        d = repo_root / base / skill_name
+        if d.is_dir():
+            for p in d.glob("*.jsonl"):
+                seen.setdefault(p.name, p)
+    return [seen[k] for k in sorted(seen)]
 
 
 def run_summary(path: pathlib.Path) -> dict:

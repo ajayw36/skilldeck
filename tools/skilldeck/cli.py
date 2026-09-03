@@ -137,7 +137,8 @@ def cmd_evals(args) -> int:
     set_model(getattr(args, "model", None))
     rows: list[dict] = []
     meta = {"skill": skill.name, "version": skill.version, "k": args.k,
-            "model": current_model()}
+            "model": current_model(),
+            "provenance": results_mod.provenance(root, skill)}
 
     if not args.execution_only:
         from .evals.triggers import run_trigger_evals
@@ -162,8 +163,43 @@ def cmd_evals(args) -> int:
             rows.extend(run_case(root, skill, case, args.k, scratch))
 
     path = results_mod.write_run(root, skill.name, rows, meta)
-    print(f"\nresults -> {path}\n")
+    print(f"\nresults -> {path}")
+    if meta["provenance"].get("commit") and not meta["provenance"].get("dirty"):
+        print(f"recorded to evidence/{skill.name}/ (clean tree @ "
+              f"{meta['provenance']['commit'][:7]}) — commit it to share with the team")
+    else:
+        print("local only: working tree is dirty for this skill (or not a git repo) — "
+              "commit the skill first for a run that counts as team evidence")
+    print()
     print(results_mod.report(path))
+    return 0
+
+
+def cmd_history(args) -> int:
+    root = find_repo_root()
+    from .evals import results as results_mod
+    runs = results_mod.all_runs(root, args.name)
+    if not runs:
+        sys.exit(f"no eval history for {args.name}")
+    print(f"{'run':<17} {'ver':<7} {'skill@':<15} {'model':<7} {'k':<2} "
+          f"{'triggers':<9} {'vs baseline':<24} tests")
+    for p in runs:
+        s = results_mod.run_summary(p)
+        m, pv = s["meta"], (s["meta"].get("provenance") or {})
+        shared = "*" if p.parent.parent.name == "evidence" else " "
+        at = "?"
+        if pv.get("commit"):
+            at = pv["commit"][:7] + ("+dirty" if pv.get("dirty") else "")
+        t = s["triggers"]
+        trig = f"{t['recall']:.2f}/{t['precision']:.2f}" if t and t["recall"] is not None else "–"
+        c = s["comparisons"].get("candidate-vs-baseline")
+        vs = (f"{100 * c['net_lift']:+.0f}% ({c['win']}W/{c['loss']}L/{c['tie']}T)"
+              if c else "–")
+        tests = ",".join(sorted({x["case"] for x in s["cases"]})) or \
+            ("triggers" if t else "–")
+        print(f"{shared}{p.name[:15]:<16} {str(m.get('version', '?')):<7} {at:<15} "
+              f"{str(m.get('model', '?')):<7} {str(m.get('k', '?')):<2} {trig:<9} {vs:<24} {tests}")
+    print("\n* = shared team evidence (committed evidence/); others are local-only runs")
     return 0
 
 
@@ -255,6 +291,10 @@ def main(argv=None) -> int:
     sp = sub.add_parser("evals-report", help="summarize the latest eval run for a skill")
     sp.add_argument("name")
     sp.set_defaults(fn=cmd_evals_report)
+
+    sp = sub.add_parser("history", help="full eval history for a skill (local + team evidence)")
+    sp.add_argument("name")
+    sp.set_defaults(fn=cmd_history)
 
     sp = sub.add_parser("web", help="serve the local read-only dashboard")
     sp.add_argument("--port", type=int, default=7787)

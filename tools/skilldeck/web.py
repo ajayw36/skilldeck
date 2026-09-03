@@ -237,10 +237,12 @@ async function select(name){
       r.cases.map(x=>`<div class="case-r"><span class="oc ${x.outcome}">${x.outcome}</span>
         ${esc(x.case)} rep${x.rep} · ${esc(x.comparison)} · ${esc(x.decided_by)}
         ${x.reason?`<div class="rs">${esc(x.reason)}</div>`:""}</div>`).join("")}</details>`:"";
-    return `<tr><td>${stamp(r.file)}</td><td>${esc(r.meta.model||"–")}</td><td>${r.meta.k??"–"}</td>
+    const pv=r.meta.provenance||{};
+    const at=pv.commit?("@"+pv.commit.slice(0,7)+(pv.dirty?"+dirty":"")):"?";
+    return `<tr><td>${stamp(r.file)}</td><td>v${esc(r.meta.version||"?")} <span style="color:var(--muted)">${at}</span></td><td>${esc(r.meta.model||"–")}</td><td>${r.meta.k??"–"}</td>
       <td>${t?pct(t.recall)+" / "+pct(t.precision):"–"}</td>
       <td>${c?wlt(c):"–"}</td><td>${c?lift(c.net_lift):"–"}</td></tr>
-      ${fails||cases?`<tr><td colspan="6">${fails}${cases}</td></tr>`:""}`;
+      ${fails||cases?`<tr><td colspan="7">${fails}${cases}</td></tr>`:""}`;
   }).join("");
   $("#main").innerHTML=`
     <h2>${esc(d.name)} <span class="badge ${d.status}"><span class="dot"></span>${d.status}</span></h2>
@@ -248,7 +250,7 @@ async function select(name){
     <div class="meta">v${d.version} · ${esc(d.owner)} · ${d.tags.map(esc).join(", ")||"no tags"}</div>
     ${tiles.length?`<div class="tiles">${tiles.join("")}</div>`:'<div class="empty">no eval runs yet — <code>skill evals '+esc(d.name)+'</code></div>'}
     ${d.runs.length?`<h3>Eval runs</h3><table>
-      <tr><th>Run</th><th>Model</th><th>k</th><th>Triggers R / P</th><th>Outcomes</th><th>Net lift</th></tr>
+      <tr><th>Run</th><th>Skill</th><th>Model</th><th>k</th><th>Triggers R / P</th><th>Outcomes</th><th>Net lift</th></tr>
       ${runs}</table>`:""}
     <h3>Skill</h3><pre class="body">${esc(d.body)}</pre>`;
 }
