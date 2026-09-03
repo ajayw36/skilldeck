@@ -59,6 +59,15 @@ def _seed_sandbox(case: dict, skill_dir_src: pathlib.Path | None,
         if not src.is_dir():
             raise FileNotFoundError(f"{case['_path']}: fixture dir not found: {src}")
         shutil.copytree(src, sandbox, dirs_exist_ok=True)
+    for rel, content in (case.get("files") or {}).items():
+        rel = str(rel)
+        if rel.startswith(("/", "..")):
+            raise ValueError(f"{case['_path']}: unsafe file path in case: {rel}")
+        p = sandbox / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(str(content), encoding="utf-8")
+        if rel.endswith(".sh"):
+            p.chmod(0o755)
     if skill_dir_src is not None or skill_md_override is not None:
         dst = sandbox / ".claude" / "skills" / skill_name
         if skill_dir_src is not None:

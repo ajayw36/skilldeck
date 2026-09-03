@@ -164,6 +164,27 @@ def cmd_evals(args) -> int:
     return 0
 
 
+def cmd_gen_evals(args) -> int:
+    root = find_repo_root()
+    skill_md = root / "skills" / args.name / "SKILL.md"
+    if not skill_md.is_file():
+        sys.exit(f"error: no such skill: {args.name}")
+    skill = parse_skill_md(skill_md)
+    from .evals.generate import generate
+    print(f"generating {args.cases} case(s) and {args.triggers}+{args.triggers} trigger "
+          f"prompts for {skill.name} (one model call, may take a minute)...")
+    summary = generate(root, skill, n_cases=args.cases, n_triggers=args.triggers)
+    print(f"triggers added: {summary['triggers_added']} (merged into evals/triggers.yaml)")
+    for p in summary["cases_written"]:
+        print(f"case written:   {p}")
+    for d in summary["dropped"]:
+        print(f"dropped:        {d}")
+    print("\ngenerated evals are marked with a review header — read them before trusting; "
+          "a model generating tests from a skill tends to generate tests the skill passes.\n"
+          f"next: skill evals {skill.name} --triggers-only, then --execution-only --k 1")
+    return 0
+
+
 def cmd_evals_report(args) -> int:
     root = find_repo_root()
     from .evals import results as results_mod
@@ -210,6 +231,12 @@ def main(argv=None) -> int:
     sp.add_argument("--execution-only", action="store_true")
     sp.add_argument("--case", help="run only this execution case (by filename stem)")
     sp.set_defaults(fn=cmd_evals)
+
+    sp = sub.add_parser("gen-evals", help="generate trigger prompts and execution cases with the model")
+    sp.add_argument("name")
+    sp.add_argument("--cases", type=int, default=3, help="execution cases to generate (default 3)")
+    sp.add_argument("--triggers", type=int, default=4, help="prompts per trigger list (default 4)")
+    sp.set_defaults(fn=cmd_gen_evals)
 
     sp = sub.add_parser("evals-report", help="summarize the latest eval run for a skill")
     sp.add_argument("name")

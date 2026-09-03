@@ -74,6 +74,10 @@ def run_agent(prompt: str, cwd: pathlib.Path, transcript_path: pathlib.Path | No
         "--max-turns", str(max_turns),
         "--permission-mode", "acceptEdits",
         "--allowedTools", "Bash Read Write Edit Glob Grep",
+        # Isolate from the invoking user's personal config (global CLAUDE.md,
+        # hooks, MCP servers) — evals must be reproducible across machines.
+        "--setting-sources", "project",
+        "--strict-mcp-config",
     ]
     proc = subprocess.run(
         cmd, cwd=str(cwd), capture_output=True, text=True, timeout=timeout,
@@ -92,7 +96,8 @@ def ask_json(prompt: str, timeout: int = 120) -> dict:
     Used for trigger selection and pairwise judging.
     """
     cmd = [AGENT_CMD, "-p", prompt, "--output-format", "json",
-           "--max-turns", "1", "--disallowedTools", "*"]
+           "--max-turns", "1", "--disallowedTools", "*",
+           "--setting-sources", "project", "--strict-mcp-config"]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     if proc.returncode != 0:
         raise AgentRunError(f"model call failed (rc={proc.returncode}): {proc.stderr[-2000:]}")

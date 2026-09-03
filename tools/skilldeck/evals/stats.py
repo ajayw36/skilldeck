@@ -16,6 +16,16 @@ def sign_test(wins: int, losses: int) -> float:
     return min(1.0, 2 * tail)
 
 
+def net_lift(wins: int, losses: int, ties: int) -> float:
+    """Net pairwise lift: fraction of comparisons the skill improved, minus the
+    fraction it degraded. Ties dilute it — a tie is evidence of no improvement."""
+    n = wins + losses + ties
+    return (wins - losses) / n if n else 0.0
+
+
 def summarize(wins: int, losses: int, ties: int) -> str:
     p = sign_test(wins, losses)
-    return f"{wins}W / {losses}L / {ties}T (sign test p={p:.3f})"
+    n = wins + losses + ties
+    lift = 100 * net_lift(wins, losses, ties)
+    return (f"{lift:+.0f}% net lift "
+            f"({wins}W / {losses}L / {ties}T over {n} comparisons, sign test p={p:.3f})")

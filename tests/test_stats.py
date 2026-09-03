@@ -1,6 +1,24 @@
 import unittest
 
-from skilldeck.evals.stats import sign_test
+from skilldeck.evals.stats import net_lift, sign_test, summarize
+
+
+class TestNetLift(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual(net_lift(0, 0, 0), 0.0)
+
+    def test_user_run(self):
+        # 5W/1L/3T -> (5-1)/9
+        self.assertAlmostEqual(net_lift(5, 1, 3), 4 / 9)
+
+    def test_ties_dilute(self):
+        self.assertGreater(net_lift(5, 1, 0), net_lift(5, 1, 6))
+
+    def test_summary_format(self):
+        s = summarize(5, 1, 3)
+        self.assertIn("+44% net lift", s)
+        self.assertIn("5W / 1L / 3T", s)
+        self.assertIn("p=0.219", s)
 
 
 class TestSignTest(unittest.TestCase):

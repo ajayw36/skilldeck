@@ -43,6 +43,24 @@ outcome is observable — checks don't drift with judge models.
 naively doing the task goes wrong (see deploy-preflight's `missing-env.yaml`).
 Happy-path-only evals verify nothing.
 
+## Generating evals
+
+```sh
+skill gen-evals my-skill --cases 3 --triggers 4
+```
+
+One model call generates new trigger prompts (merged into `triggers.yaml`) and
+execution cases written as `evals/cases/gen-*.yaml` with **inline fixtures** —
+a `files:` map materialized into the sandbox at run time, so generated cases
+are self-contained. Invalid check kinds and duplicate names are dropped, and
+every generated file carries a review header.
+
+Bias warning: a model generating tests from a skill tends to generate tests
+the skill passes. The generator is prompted toward outcome checks, adversarial
+fixtures, and near-miss triggers, but read generated evals as *coverage*, not
+proof — the baseline-vs-candidate arms are what keep the measurement honest,
+since both arms face the same generated case.
+
 ## Running
 
 ```sh

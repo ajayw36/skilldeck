@@ -12,7 +12,7 @@
         "ci"
       ],
       "evals": {
-        "execution_cases": 3,
+        "execution_cases": 5,
         "has_triggers": true
       }
     }
